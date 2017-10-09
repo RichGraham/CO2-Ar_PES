@@ -5,8 +5,6 @@ module PES_details
   double precision :: gpRMin = -100.0  
   double precision :: lCO = 1.1632
   double precision :: AngToBohr =  1.8897259885789
-  double precision :: gpEmax = 0.456 !! Needs recoding so that this is read from training data
-  !! Maximum energy in Hartree seen within the geometric constraint
   interface PES_GP 
      function PES_GP(xStar) 
        implicit none 
@@ -19,9 +17,9 @@ end module PES_details
 
 module GP_variables
   double precision, allocatable :: alpha (:), lScale(:), xTraining(:,:), xTrainingPerm(:,:)
-  double precision expVar,NuggVar
-  integer :: nDim=6
-  integer :: nTraining=135 
+  double precision expVar,NuggVar, gpEmax
+  integer :: nDim=3
+  integer :: nTraining=221
 end module GP_variables
 
 
@@ -30,7 +28,7 @@ implicit none
 
 integer k,i, choice
 
-!call load_GP_Data
+call load_GP_Data
 call fixedAngleSlice
 
 end
@@ -111,49 +109,49 @@ subroutine load_GP_Data
   
   double precision, allocatable::  xStar(:)
   integer i,j
-  double precision :: dum
+  double precision :: dum, expVar1, expVar2
   character (len=90) :: filename
 
   allocate (alpha(nTraining), lScale(nDim), xTraining(nDim,nTraining),xTrainingPerm(nDim,nTraining), xStar(nDim))
 
   !====Load hyperparameters====
-  write (filename, '( "N", I4.4, "/HyperParams_Symm.dat" )' )  nTraining
+  write (filename, '( "TrainingData/HyperParams_Symm", I3.3, ".dat" )' )  nTraining
   open (unit = 7, file = filename)
   !Only need to read some as others are tied.
-  read (7,*) lScale(4), lScale(3), lScale(2), lScale(1),expVar,NuggVar
+  read (7,*) lScale(1), lScale(2), expVar1, expVar2,NuggVar, gpEmax
   !Copy over the tied values
-  lScale(5) = lScale(3)
-  lScale(6) = lScale(4)
-  !print *,"HyperParams",lScale(1), lScale(2), lScale(3), lScale(4), lScale(5), lScale(6),expVar,NuggVar
+  lScale(3) = lScale(2)
+  expVar = expVar1 * expVar2
+  print *,"HyperParams",lScale(1), lScale(2), lScale(3), expVar1, expVar2,NuggVar, gpEmax
   close(7)
   
   !====Load alpha coefficients====
-  write (filename, '( "N", I4.4, "/alpha_Symm.dat" )' )  nTraining
+  write (filename, '( "TrainingData/alpha_Symm", I3.3, ".dat" )' )  nTraining
   open (unit = 7, file = filename)
   do i=1,nTraining
      read (7,*) alpha(i)
-     !print *,"alpha ",i, alpha(i)
+     print *,"alpha ",i, alpha(i)
   end do
   close(7)
 
 
   !====Load training data x values ====
-  write (filename, '( "N", I4.4, "/xTraining.dat" )' )  nTraining
-  open (unit = 7, file = filename)
+  !write (filename, '( "N", I4.4, "/xTraining.dat" )' )  nTraining
+  !open (unit = 7, file = filename)
     
-  do i=1,nTraining
-     read (7,*) xTraining(1,i), xTraining(2,i), xTraining(3,i), xTraining(4,i), xTraining(5,i), xTraining(6,i)  
-  end do
-  close(7)
+  !do i=1,nTraining
+  !   read (7,*) xTraining(1,i), xTraining(2,i), xTraining(3,i), xTraining(4,i), xTraining(5,i), xTraining(6,i)  
+  !end do
+  !close(7)
   
   !! Permute the training vectors
-  xTrainingPerm = xTraining
-  do i=1,nTraining
-     xTrainingPerm(3,i)=xTraining(5,i)
-     xTrainingPerm(5,i)=xTraining(3,i)
-     xTrainingPerm(4,i)=xTraining(6,i)
-     xTrainingPerm(6,i)=xTraining(4,i)
-  end do
+  !xTrainingPerm = xTraining
+  !do i=1,nTraining
+  !   xTrainingPerm(3,i)=xTraining(5,i)
+  !   xTrainingPerm(5,i)=xTraining(3,i)
+  !   xTrainingPerm(4,i)=xTraining(6,i)
+  !   xTrainingPerm(6,i)=xTraining(4,i)
+  !end do
 
 end subroutine load_GP_Data
   
@@ -185,6 +183,7 @@ end function PES_GP
 function PES( rab )
   !! Takes in rab in Angstrom
   use PES_details
+  use GP_variables
   implicit none
   double precision rab(3), xStar(3), asymp
   double precision  PES
