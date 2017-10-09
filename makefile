@@ -1,6 +1,6 @@
 # simple make file
 SOURCES=PES_GP_Symm.f90 
-PRODUCT=CO2-CO_PES.out
+PRODUCT=CO2-Ar_PES.out
 
 
 all: $(PRODUCT)
