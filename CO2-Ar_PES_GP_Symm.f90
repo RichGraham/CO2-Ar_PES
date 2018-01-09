@@ -22,52 +22,7 @@ module GP_CO2_Ar_variables
   integer :: nTraining=221
 end module GP_CO2_Ar_variables
 
-
-subroutine fixedAngleSlice()
-  use PES_CO2_Ar_details
-  implicit none
-  double precision rab(3)
-  integer i, itot
-  double precision  r, beta1, e, e_GP, asymp, PES_CO2_Ar
-    
-  itot=500
-  beta1 =  0   /180.0*3.14159265359
-
-  open (unit=15, file="PES_CO2_Ar_Out.dat ", status='replace')
-  
-  do i=0, itot
-
-     ! specify centre-to-centre separation
-     r = (  0.5 + 15.0*i/(1.0*itot) ) 
-
-     call computeDistances(r,beta1,rab)
-     
-     
-     e=PES_CO2_Ar( rab)
-     !e_GP = PES_CO2_Ar_GP( xStar)
-     write(15,*) r , e 
-     
-  enddo
-  write(6,*)'Written to file: PES_CO2_Ar_Out.dat '
-  close(15)
-
-end subroutine fixedAngleSlice
-  
-  
-  
-subroutine computeDistances(r,beta1, rab)
-  use PES_CO2_Ar_details
-  implicit none
-  double precision  rab(3), r, beta1
-  integer ia, ib, ir,k
-
-  rab(1)=r
-  rab(2)= SQRT( (lCO*SIN(beta1))**2 +(lCO*COS(beta1)-r)**2  )
-  rab(3)= SQRT( (lCO*SIN(beta1))**2 +(lCO*COS(beta1)+r)**2  )
-   
-end subroutine
-
-double precision function asymp(rab)
+double precision function asymp_CO2_Ar(rab)
   use PES_CO2_Ar_details
   implicit none
   double precision rab(3)
@@ -83,7 +38,7 @@ double precision function asymp(rab)
   o1Ar = - ( 8.69 * (1 + 3*c2**2)  +  4.76 * (5 - 3*c2**2) ) / (rab(2)*AngToBohr)**6
   o2Ar = - ( 8.69 * (1 + 3*c3**2)  +  4.76 * (5 - 3*c3**2) ) / (rab(3)*AngToBohr)**6
   
-  asymp= cAr + o1Ar + o2Ar
+  asymp_CO2_Ar= cAr + o1Ar + o2Ar
 end
 
 
@@ -102,7 +57,8 @@ subroutine load_GP_CO2_Ar_Data
   character (len=90) :: filename
 
   allocate (alpha(nTraining), lScale(nDim), xTraining(nDim,nTraining),xTrainingPerm(nDim,nTraining), xStar(nDim))
-
+  call chdir("../CO2-Ar_PES")
+  
   !====Load hyperparameters====
   write (filename, '( "TrainingData/HyperParams_Symm", I3.3, ".dat" )' )  nTraining
   open (unit = 7, file = filename)
@@ -173,7 +129,7 @@ function PES_CO2_Ar( rab )
   use PES_CO2_Ar_details
   use GP_CO2_Ar_variables
   implicit none
-  double precision rab(3), xStar(3), asymp
+  double precision rab(3), xStar(3), asymp_CO2_Ar
   double precision  PES_CO2_Ar
   double precision repFactor
 
@@ -181,7 +137,7 @@ function PES_CO2_Ar( rab )
   
   if( rab(1) > gpRMax  .AND.  rab(2) > gpRMax .AND.  rab(3) > gpRMax &
        ) then !!Use asymptotic function
-     PES_CO2_Ar = asymp(rab)
+     PES_CO2_Ar = asymp_CO2_Ar(rab)
      
   else if (rab(1) < gpRMin/repFactor  .OR.  rab(2) < gpRMin/repFactor  .OR.  rab(3) < gpRMin/repFactor &
        ) then !! Use repulsive approximation function
