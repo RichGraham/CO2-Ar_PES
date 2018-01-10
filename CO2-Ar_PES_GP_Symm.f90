@@ -55,9 +55,12 @@ subroutine load_GP_CO2_Ar_Data
   integer i,j
   double precision :: dum, expVar1, expVar2
   character (len=90) :: filename
+  CHARACTER(len=255) :: homedir,codedir
 
   allocate (alpha(nTraining), lScale(nDim), xTraining(nDim,nTraining),xTrainingPerm(nDim,nTraining), xStar(nDim))
-  call chdir("../CO2-Ar_PES")
+  CALL getenv("HOME", homedir)
+  codedir=TRIM(homedir) // '/source/CO2-Ar_PES'
+  call chdir(codedir)
   
   !====Load hyperparameters====
   write (filename, '( "TrainingData/HyperParams_Symm", I3.3, ".dat" )' )  nTraining
