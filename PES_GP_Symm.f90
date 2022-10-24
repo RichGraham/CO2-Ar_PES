@@ -1,17 +1,23 @@
 
 
- ! Test program
+  ! Test program
+use PES_CO2_Ar_details
 implicit none
-
-integer k,i, choice
+double precision rab(3),e
+double precision  r, beta1, PES_CO2_Ar
 
 call load_GP_CO2_Ar_Data
-call fixedAngleSlice
+
+r = 3.75
+beta1 = 0
+call computeDistances( r, beta1, rab)
+print *,rab
+
+e = PES_CO2_Ar( rab)
+print *,e
 
 end
 !
-
-
 
 
 subroutine fixedAngleSlice()
@@ -43,7 +49,8 @@ subroutine fixedAngleSlice()
   close(15)
 
 end subroutine fixedAngleSlice
-  
+
+
   
   
 subroutine computeDistances(r,beta1, rab)
